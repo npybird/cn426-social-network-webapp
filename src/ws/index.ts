@@ -86,7 +86,7 @@ function broadcast(room: string, msg: any) {
 
 export function attachWebSocket(server: http.Server) {
   server.on("upgrade", (req: IncomingMessage, socket) => {
-    console.log("[WS] upgrade hit:", req.url); // <— ต้องเห็นบรรทัดนี้เวลาเชื่อมจาก Postman
+    console.log("[WS] upgrade hit:", req.url);
     if ((req.headers["upgrade"] || "").toLowerCase() !== "websocket")
       return socket.destroy();
     const key = req.headers["sec-websocket-key"];
@@ -141,7 +141,7 @@ export function attachWebSocket(server: http.Server) {
               if (!content || content.length > 500) continue;
 
               const now = Date.now();
-              if (now - client.lastSendTs < 200) continue; // throttle 200ms
+              if (now - client.lastSendTs < 200) continue; // throttle 200ms for anti-spamming messsages
               client.lastSendTs = now;
 
               await persistMessage({
