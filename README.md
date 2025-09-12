@@ -1,4 +1,4 @@
-# CN426 Social-Network-Webapp – API Docs (Phase-1)
+# CN426 Social-Network-Webapp (Backend) – API Docs (Phase-1)
 
 > Backend: Node.js + Express + Prisma (SQLite)
 > Realtime: **Hand-rolled WebSocket (RFC6455)** (no Socket.IO/Pusher)
@@ -290,7 +290,3 @@ CORS_ORIGIN="http://localhost:3000"
 ## Changelog
 
 - **Phase-1**: Auth + group chat (`room=global`) with history + hand-rolled WebSocket.
-
----
-
-If you want, I can also export a **Postman collection** matching these endpoints so your team can import and test in one click.

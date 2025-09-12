@@ -1,4 +1,4 @@
-# CN426 Chat – API Docs (Phase-1)
+# CN426 Social-Network-Webapp (Backend) – API Docs (Phase-1)
 
 > Backend: Node.js + Express + Prisma (SQLite)
 > Realtime: **Hand-rolled WebSocket (RFC6455)** (no Socket.IO/Pusher)
