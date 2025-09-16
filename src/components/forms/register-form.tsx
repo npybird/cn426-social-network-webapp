@@ -10,10 +10,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { login } from "@/lib/api";
-import { loginSchema, type LoginValues } from "@/lib/validators";
+import { register as registerApi } from "@/lib/api";
+import { registerSchema, type RegisterValues } from "@/lib/validators";
 
-export function LoginForm() {
+export function RegisterForm() {
     const router = useRouter();
 
     const {
@@ -21,24 +21,27 @@ export function LoginForm() {
         handleSubmit,
         formState: { errors, isSubmitting },
         setError,
-    } = useForm<LoginValues>({
-        resolver: zodResolver(loginSchema),
-        defaultValues: { username: "", password: "" },
+    } = useForm<RegisterValues>({
+        resolver: zodResolver(registerSchema),
+        defaultValues: {
+            email: "",
+            username: "",
+            password: "",
+            confirmPassword: "",
+        },
     });
 
-    const onSubmit = async (values: LoginValues) => {
+    const onSubmit = async (values: RegisterValues) => {
         try {
-            // ใช้คุกกี้ HttpOnly 
-            const res = await login(values, { useCredentials: true });
-
-            // ถ้าส่ง accessToken กลับมา (โหมด Bearer)เก็บได้
-            if (res.accessToken) localStorage.setItem("accessToken", res.accessToken);
-
-            router.push("/chat");
+            const { email, username, password } = values;
+            await registerApi({ email, username, password });
+            router.push("/login"); // สมัครเสร็จให้ไปล็อกอิน
         } catch (err: any) {
-            const msg = err?.message ?? "Login failed";
+            const msg = err?.message ?? "Register failed";
+            setError("email", { message: msg });
             setError("username", { message: msg });
             setError("password", { message: msg });
+            setError("confirmPassword", { message: msg });
         }
     };
 
@@ -46,7 +49,7 @@ export function LoginForm() {
         <div className="flex flex-col gap-6">
             <Card className="overflow-hidden p-0 bg-[#7EB6FF]">
                 <CardContent className="grid p-0 md:grid-cols-2">
-                    {/* แผงภาพซ้ายตามดีไซน์ (จะใส่ภาพจริงทีหลังได้) */}
+                    {/* ฝั่งซ้าย (ภาพ/แบ็กกราวด์) */}
                     <div className="bg-muted relative hidden md:block">
                         <img
                             src="/placeholder.svg"
@@ -55,14 +58,25 @@ export function LoginForm() {
                         />
                     </div>
 
-                    {/* ฟอร์มขวา */}
+                    {/* ฟอร์มฝั่งขวา */}
                     <form className="p-6 md:p-8" onSubmit={handleSubmit(onSubmit)}>
                         <div className="flex flex-col gap-6">
                             <div className="flex flex-col items-center text-center">
-                                <h1 className="text-2xl font-bold">Welcome back!</h1>
-                                <p className="text-muted-foreground">
-                                    Login to your account
-                                </p>
+                                <h1 className="text-2xl font-bold">Create Account</h1>
+                            </div>
+
+                            <div className="grid gap-3">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="your email"
+                                    className="bg-[#EDF0F5]"
+                                    {...register("email")}
+                                />
+                                {errors.email && (
+                                    <p className="text-sm text-red-600">{errors.email.message}</p>
+                                )}
                             </div>
 
                             <div className="grid gap-3">
@@ -97,14 +111,30 @@ export function LoginForm() {
                                 )}
                             </div>
 
+                            <div className="grid gap-3">
+                                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                                <Input
+                                    id="confirmPassword"
+                                    type="password"
+                                    placeholder="confirm your password"
+                                    className="bg-[#EDF0F5]"
+                                    {...register("confirmPassword")}
+                                />
+                                {errors.confirmPassword && (
+                                    <p className="text-sm text-red-600">
+                                        {errors.confirmPassword.message}
+                                    </p>
+                                )}
+                            </div>
+
                             <Button type="submit" className="w-full" disabled={isSubmitting}>
-                                {isSubmitting ? "Signing in..." : "Login"}
+                                {isSubmitting ? "Creating..." : "Register"}
                             </Button>
 
                             <div className="text-center text-sm">
-                                Don&apos;t have an account?{" "}
-                                <a href="/register" className="underline underline-offset-4">
-                                    Sign up
+                                Already have an account?{" "}
+                                <a href="/login" className="underline underline-offset-4">
+                                    Login
                                 </a>
                             </div>
                         </div>
@@ -114,9 +144,9 @@ export function LoginForm() {
 
             <div className="text-muted-foreground text-center text-xs">
                 By clicking continue, you agree to our{" "}
-                <a href="#" className="underline underline-offset-4">Terms of Service</a>{" "}
+                <a className="underline underline-offset-4" href="#">Terms of Service</a>{" "}
                 and{" "}
-                <a href="#" className="underline underline-offset-4">Privacy Policy</a>.
+                <a className="underline underline-offset-4" href="#">Privacy Policy</a>.
             </div>
         </div>
     );
@@ -128,7 +158,7 @@ export function LoginForm() {
 // import { Input } from "@/components/ui/input"
 // import { Label } from "@/components/ui/label"
 
-// export function LoginForm({
+// export function RegisterForm({
 //     className,
 //     ...props
 // }: React.ComponentProps<"div">) {
@@ -147,10 +177,20 @@ export function LoginForm() {
 //                     <form className="p-6 md:p-8">
 //                         <div className="flex flex-col gap-6">
 //                             <div className="flex flex-col items-center text-center">
-//                                 <h1 className="text-2xl font-bold">Welcome back!</h1>
-//                                 <p className="text-muted-foreground text-balance">
+//                                 <h1 className="text-2xl font-bold">Welcome our community!</h1>
+//                                 {/* <p className="text-muted-foreground text-balance">
 //                                     Login to your account
-//                                 </p>
+//                                 </p> */}
+//                             </div>
+//                             <div className="grid gap-3">
+//                                 <Label htmlFor="email">Email</Label>
+//                                 <Input
+//                                     className="bg-[#EDF0F5]"
+//                                     id="email"
+//                                     type="text"
+//                                     placeholder="your email"
+//                                     required
+//                                 />
 //                             </div>
 //                             <div className="grid gap-3">
 //                                 <Label htmlFor="username">Username</Label>
@@ -172,6 +212,7 @@ export function LoginForm() {
 //                                     type="password"
 //                                     placeholder="your password"
 //                                     required />
+
 //                                 {/* <a
 //                                     href="#"
 //                                     className="ml-auto text-sm underline-offset-2 hover:underline"
@@ -179,8 +220,19 @@ export function LoginForm() {
 //                                     Forgot your password?
 //                                 </a> */}
 //                             </div>
+//                             <div className="grid gap-3">
+//                                 <div className="flex items-center">
+//                                     <Label htmlFor="password">Confirm Password</Label>
+//                                 </div>
+//                                 <Input
+//                                     className="bg-[#EDF0F5]"
+//                                     id="password"
+//                                     type="password"
+//                                     placeholder="confirm your password"
+//                                     required />
+//                             </div>
 //                             <Button type="submit" className="w-full">
-//                                 Login
+//                                 Register
 //                             </Button>
 //                             {/* <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
 //                                 <span className="bg-card text-muted-foreground relative z-10 px-2">
@@ -217,9 +269,9 @@ export function LoginForm() {
 //                                 </Button> */}
 //                             </div>
 //                             <div className="text-center text-sm">
-//                                 Don&apos;t have an account?{" "}
+//                                 Already have an account?{" "}
 //                                 <a href="#" className="underline underline-offset-4">
-//                                     Sign up
+//                                     Login
 //                                 </a>
 //                             </div>
 //                         </div>
