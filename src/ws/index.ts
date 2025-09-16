@@ -165,7 +165,6 @@ export function attachWebSocket(server: http.Server) {
     socket.on("close", () => clients.delete(client));
     socket.on("error", () => clients.delete(client));
 
-    // Optional heartbeat
     const iv = setInterval(() => {
       if (socket.destroyed) return clearInterval(iv);
       try {
