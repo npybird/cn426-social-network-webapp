@@ -40,8 +40,8 @@ export function LoginForm() {
 
             // go to chat
             router.push("/chat");
-        } catch (err: any) {
-            const msg = err?.message ?? "Invalid credentials";
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Invalid credentials";
             setError("username", { message: msg });
             setError("password", { message: msg });
         }

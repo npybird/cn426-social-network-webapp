@@ -40,8 +40,8 @@ export function RegisterForm() {
 
             // redirect to login after success
             router.push("/login");
-        } catch (err: any) {
-            const msg = err?.message ?? "Registration failed";
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Registration failed";
             setError("email", { message: msg });
             setError("username", { message: msg });
             setError("password", { message: msg });
