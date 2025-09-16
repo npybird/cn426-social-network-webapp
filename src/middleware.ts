@@ -1,27 +1,21 @@
-// src/middleware.ts
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-/** ชื่อคุกกี้สำหรับเช็คล็อกอิน (แก้ให้ตรงกับแบ็กเอนด์ได้) */
+/**
+ * ตั้งชื่อคุกกี้ที่ใช้ยืนยันตัวตน (แก้ได้ตามแบ็กเอนด์ของคุณ)
+ * - ถ้าใช้ JWT ในคุกกี้: ตั้งชื่อจริง เช่น "accessToken" หรือ "sessionid"
+ * - สามารถตั้งผ่าน .env.local: NEXT_PUBLIC_AUTH_COOKIE=accessToken
+ */
 const AUTH_COOKIE =
     process.env.NEXT_PUBLIC_AUTH_COOKIE?.trim() || "accessToken";
 
-/** เปิด/ปิดการ์ดได้ด้วย ENV (true = ปิดการ์ด เข้าทุกหน้าได้) */
-const DISABLE_AUTH_GUARD =
-    process.env.NEXT_PUBLIC_DISABLE_AUTH_GUARD === "true";
-
-// เส้นทางที่ “ปกติ” ต้องล็อกอินก่อน
+// เส้นทางที่ต้องการป้องกัน (ต้องล็อกอินก่อน)
 const PROTECTED_MATCHERS = ["/chat"];
 
-// หน้า auth (ถ้าล็อกอินแล้วจะกันเข้า)
+// เส้นทางสำหรับ auth (ถ้าล็อกอินแล้ว จะไม่ให้เข้ามาอีก)
 const AUTH_PAGES = ["/login", "/register"];
 
 export function middleware(req: NextRequest) {
-    // —— โหมดทดสอบ: ปิดการ์ดทั้งหมด ชั่วคราว ——
-    if (DISABLE_AUTH_GUARD) {
-        return NextResponse.next();
-    }
-
     const { pathname } = req.nextUrl;
 
     // ตรวจว่ามีคุกกี้ auth ไหม
@@ -31,27 +25,34 @@ export function middleware(req: NextRequest) {
         !!req.cookies.get("sessionid") ||
         !!req.cookies.get("auth_session");
 
-    // 1) กันหน้า protected
+    // ป้องกันหน้า protected: ถ้าไม่มีคุกกี้จะเด้งไป /login
     if (PROTECTED_MATCHERS.some((p) => pathname.startsWith(p))) {
         if (!hasAuth) {
             const url = req.nextUrl.clone();
             url.pathname = "/login";
+            // ใส่ next= กลับหน้าที่ถูกกันไว้ (optional)
             url.searchParams.set("next", pathname);
             return NextResponse.redirect(url);
         }
     }
 
-    // 2) กันเข้า /login /register ถ้าล็อกอินแล้ว
-    if (AUTH_PAGES.includes(pathname) && hasAuth) {
-        const url = req.nextUrl.clone();
-        url.pathname = "/chat";
-        return NextResponse.redirect(url);
+    // กันเข้าหน้า /login /register ถ้าล็อกอินแล้วจะไป /chat
+    if (AUTH_PAGES.includes(pathname)) {
+        if (hasAuth) {
+            const url = req.nextUrl.clone();
+            url.pathname = "/chat";
+            return NextResponse.redirect(url);
+        }
     }
 
     return NextResponse.next();
 }
 
-// ระบุเส้นทางที่ middleware ทำงาน
+/**
+ * กำหนดเส้นทางที่ middleware ทำงาน
+ * เพิ่ม/ลด matcher ได้ตามต้องการ
+ */
 export const config = {
+    // matcher: ["/login", "/register", "/chat/:path*"],
     matcher: ["/login", "/register"],
 };

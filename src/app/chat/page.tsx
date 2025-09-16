@@ -31,7 +31,7 @@ export default function ChatPage() {
 
     const bottomRef = useRef<HTMLDivElement | null>(null);
 
-    // โหลดข้อมูล user ปัจจุบัน (ไว้เช็คว่าใครคือฉัน)
+    // โหลดข้อมูล user ปัจจุบัน
     useEffect(() => {
         (async () => {
             try {

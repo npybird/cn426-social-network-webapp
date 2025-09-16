@@ -9,13 +9,13 @@ export function LogoutButton() {
 
     const onLogout = async () => {
         try {
-            // เรียก logout ที่ฝั่ง Back (ปรับ path ถ้าใช้ของคุณต่างกัน)
+            // เรียก logout ที่ฝั่ง Back (ปรับ path ได้)
             await apiFetch<unknown>("/auth/logout", {
                 method: "POST",
                 useCredentials: true, // ใช้คุกกี้ HttpOnly
             });
         } catch (e) {
-            // เงียบไว้ก็ได้ ไม่เป็นไร (บาง Back ไม่มี endpoint นี้)
+            // เม้นไว้ได้ 
             console.error(e);
         } finally {
             // ถ้าเคยใช้โหมด Bearer
