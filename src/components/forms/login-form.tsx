@@ -41,9 +41,20 @@ export function LoginForm() {
             // go to chat
             router.push("/chat");
         } catch (err) {
-            const msg = err instanceof Error ? err.message : "Invalid credentials";
-            setError("username", { message: msg });
-            setError("password", { message: msg });
+            let serverMsg = "Something went wrong";
+            const anyErr: any = err;
+            if (anyErr?.response?.data) {
+                // axios-like error shape
+                serverMsg = anyErr.response.data.message ?? anyErr.response.data.error ?? serverMsg;
+            } else if (anyErr?.data) {
+                // custom error shape
+                serverMsg = anyErr.data.message ?? anyErr.data.error ?? serverMsg;
+            } else if (anyErr?.message) {
+                serverMsg = anyErr.message;
+            }
+
+            // This is a form-level error (invalid credentials), not a field-level one
+            setError("root", { type: "server", message: serverMsg });
         }
     };
 
@@ -52,11 +63,11 @@ export function LoginForm() {
             <Card className="overflow-hidden p-0 bg-[#7EB6FF]">
                 <CardContent className="grid p-0 md:grid-cols-2">
                     {/* left illustration panel (kept as-is) */}
-                    <div className="bg-muted relative hidden md:block">
+                    <div className="bg-white relative hidden md:block">
                         <img
-                            src="/placeholder.svg"
-                            alt="illustration"
-                            className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+                            src="/full-logo.png"
+                            alt="logo"
+                            className="absolute inset-0 h-full w-full object-contain dark:brightness-[0.2] dark:grayscale"
                         />
                     </div>
 
@@ -65,8 +76,14 @@ export function LoginForm() {
                         <div className="flex flex-col gap-6">
                             <div className="flex flex-col items-center text-center">
                                 <h1 className="text-2xl font-bold">Welcome back!</h1>
-                                <p className="text-muted-foreground">Login to your account</p>
+                                <p className="text-gray-600">Login to your account</p>
                             </div>
+
+                            {errors.root?.message && (
+                                <p className="rounded-md bg-red-200/90 px-3 py-2 text-sm text-red-700">
+                                    {errors.root.message as string}
+                                </p>
+                            )}
 
                             <div className="grid gap-3">
                                 <Label htmlFor="username">Username or Email</Label>
