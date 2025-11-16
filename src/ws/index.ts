@@ -85,7 +85,7 @@ function broadcast(room: string, msg: any) {
 }
 
 export function attachWebSocket(server: http.Server) {
-  server.on("upgrade", (req: IncomingMessage, socket) => {
+  server.on("upgrade", async (req: IncomingMessage, socket) => {
     console.log("[WS] upgrade hit:", req.url);
     if ((req.headers["upgrade"] || "").toLowerCase() !== "websocket")
       return socket.destroy();
@@ -95,7 +95,8 @@ export function attachWebSocket(server: http.Server) {
 
     const { query } = url.parse(req.url || "", true);
     const token = String(query?.token || "");
-    const room = String(query?.room || "global").trim() || "global";
+    let room = typeof query?.room === "string" ? query.room.trim() : "global";
+    if (!room) room = "global";
 
     let userId = "";
     try {
@@ -144,15 +145,21 @@ export function attachWebSocket(server: http.Server) {
               if (now - client.lastSendTs < 200) continue; // throttle 200ms for anti-spamming messsages
               client.lastSendTs = now;
 
-              await persistMessage({
+              const saved = await persistMessage({
                 userId: client.userId,
                 room: client.room,
                 content,
                 ts: now,
               });
+
               broadcast(client.room, {
                 kind: "chat",
-                payload: { userId: client.userId, content, ts: now },
+                payload: {
+                  userId: saved.userId,
+                  username: saved.user.username,
+                  content: saved.content,
+                  ts: saved.createdAt.getTime(),
+                },
               });
             }
           } catch {

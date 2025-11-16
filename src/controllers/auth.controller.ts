@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { env } from "../config/env";
+import { json } from "stream/consumers";
 
 // Sign Up
 const signupSchema = z.object({
@@ -25,7 +26,7 @@ export async function signup(req: Request, res: Response) {
     });
     res.status(201).json(user);
   } catch {
-    res.status(409).json({ message: "email/username is already taken" });
+    res.status(409).json({ message: "Email/Username is already taken" });
   }
 }
 
@@ -43,10 +44,10 @@ export async function login(req: Request, res: Response) {
   const user = await prisma.user.findFirst({
     where: { OR: [{ email: emailOrUsername }, { username: emailOrUsername }] },
   });
-  if (!user) return res.status(401).json({ message: "invalid credentials" });
+  if (!user) return res.status(401).json({ message: "Invalid Credentials" });
 
   const ok = await bcrypt.compare(password, user.password);
-  if (!ok) return res.status(401).json({ message: "invalid credentials" });
+  if (!ok) return res.status(401).json({ message: "Invalid Credentials" });
 
   const token = jwt.sign({}, env.JWT_SECRET, {
     subject: user.id,

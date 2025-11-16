@@ -6,12 +6,15 @@ export async function persistMessage(input: {
   content: string;
   ts: number;
 }) {
-  await prisma.message.create({
+  return await prisma.message.create({
     data: {
       userId: input.userId,
       room: input.room,
       content: input.content,
       createdAt: new Date(input.ts),
+    },
+    include: {
+      user: { select: { username: true } },
     },
   });
 }
