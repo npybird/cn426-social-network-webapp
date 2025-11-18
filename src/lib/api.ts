@@ -1,3 +1,4 @@
+// lib/api.ts
 import { api } from "./axios";
 
 export type User = { id: string; email: string; username: string };
@@ -14,16 +15,36 @@ export const login = (p: { emailOrUsername: string; password: string }) =>
 
 export const me = () => api.get<User>("/auth/me").then((r) => r.data);
 
+// Updated type
 export type HistoryItem = {
   id: string;
   userId: string;
-  room: string;
+  roomId: string;
   content: string;
   createdAt: string;
   user: { id: string; username: string };
 };
 
-export const getMessages = (room = "global", limit = 50) =>
+// Updated API: use roomId
+export const getMessages = (roomId: string, limit = 50) =>
   api
-    .get<HistoryItem[]>("/messages", { params: { room, limit } })
+    .get<HistoryItem[]>("/messages", {
+      params: { roomId, limit },
+    })
     .then((r) => r.data);
+
+export const getMyRooms = () =>
+  api
+    .get<{ roomId: string; name: string; isGroup: boolean }[]>("/rooms/my")
+    .then((r) => r.data);
+
+export const openDM = (otherUserId: string) =>
+  api
+    .post<{ roomId: string; name: string; isGroup: boolean }>(
+      "/rooms/open-dm",
+      { otherUserId }
+    )
+    .then((r) => r.data);
+
+export const createGroup = (name: string, members: string[]) =>
+  api.post("/rooms/create-group", { name, members }).then((r) => r.data);

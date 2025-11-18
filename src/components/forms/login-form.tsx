@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { login } from "@/lib/api";                       // POST /auth/login -> { token, user }
+import { getMyRooms, login } from "@/lib/api";                       // POST /auth/login -> { token, user }
 import { loginSchema, type LoginValues } from "@/lib/validators"; // likely { username, password }
 
 export function LoginForm() {
@@ -38,8 +38,17 @@ export function LoginForm() {
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(user));
 
-            // go to chat
-            router.push("/chat");
+            // fetch rooms
+            const rooms = await getMyRooms();
+
+            if (rooms.length === 0) {
+                alert("No rooms found for this user");
+                return;
+            }
+
+            const firstRoom = rooms[0];
+
+            router.push(`/chat/${firstRoom.roomId}`);
         } catch (err) {
             let serverMsg = "Something went wrong";
             const anyErr: any = err;

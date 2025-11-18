@@ -1,35 +1,55 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import { connectWS } from "@/lib/ws";
 import { getMessages } from "@/lib/api";
 
-export type ChatMsg = { userId: string; content: string; ts: number };
+export type ChatMsg = {
+  userId: string;
+  username: string;
+  content: string;
+  ts: number;
+};
 
-export function useChat(token: string | null, room = "global") {
+export function useChat(token: string | null, roomId: string) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !roomId) return;
     let closed = false;
 
     (async () => {
-      const history = await getMessages(room, 50);
+      // REST: load history from this roomId
+      const history = await getMessages(roomId, 50);
       if (closed) return;
       setMessages(
         history.map((h) => ({
           userId: h.user.id,
+          username: h.user.username,
           content: h.content,
           ts: Date.parse(h.createdAt),
         }))
       );
 
-      const ws = connectWS(token, room);
+      // WS connect
+      const ws = connectWS(token, roomId);
       wsRef.current = ws;
+
       ws.onmessage = (ev) => {
         try {
           const { kind, payload } = JSON.parse(ev.data);
-          if (kind === "chat") setMessages((m) => [...m, payload]);
+          if (kind === "chat") {
+            setMessages((m) => [
+              ...m,
+              {
+                userId: payload.userId,
+                username: payload.username,
+                content: payload.content,
+                ts: payload.ts,
+              },
+            ]);
+          }
         } catch {}
       };
     })();
@@ -38,7 +58,7 @@ export function useChat(token: string | null, room = "global") {
       closed = true;
       wsRef.current?.close();
     };
-  }, [token, room]);
+  }, [token, roomId]);
 
   const send = (content: string) => {
     const ws = wsRef.current;
