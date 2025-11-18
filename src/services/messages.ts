@@ -2,19 +2,26 @@ import { prisma } from "../config/db";
 
 export async function persistMessage(input: {
   userId: string;
-  room: string;
+  roomId: string;
   content: string;
   ts: number;
 }) {
-  return await prisma.message.create({
+  const saved = await prisma.message.create({
     data: {
       userId: input.userId,
-      room: input.room,
+      roomId: input.roomId,
       content: input.content,
       createdAt: new Date(input.ts),
     },
     include: {
-      user: { select: { username: true } },
+      user: {
+        select: {
+          id: true,
+          username: true,
+        },
+      },
     },
   });
+
+  return saved;
 }

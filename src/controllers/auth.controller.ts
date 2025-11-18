@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { env } from "../config/env";
-import { json } from "stream/consumers";
 
 // Sign Up
 const signupSchema = z.object({
@@ -20,10 +19,27 @@ export async function signup(req: Request, res: Response) {
 
   const hash = await bcrypt.hash(password, 10);
   try {
+    // 1) Create user
     const user = await prisma.user.create({
       data: { email, username, password: hash },
       select: { id: true, email: true, username: true },
     });
+
+    // 2) Automatically join global room
+    const globalRoom = await prisma.room.findFirst({
+      where: { name: "global" },
+    });
+
+    if (globalRoom) {
+      await prisma.roomMember.create({
+        data: {
+          userId: user.id,
+          roomId: globalRoom.id,
+        },
+      });
+    }
+
+    // 3) Return user
     res.status(201).json(user);
   } catch {
     res.status(409).json({ message: "Email/Username is already taken" });

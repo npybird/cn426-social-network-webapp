@@ -4,6 +4,7 @@ import url from "url";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { persistMessage } from "../services/messages";
+import { prisma } from "../config/db";
 
 type Client = {
   socket: any; // net.Socket
@@ -95,8 +96,13 @@ export function attachWebSocket(server: http.Server) {
 
     const { query } = url.parse(req.url || "", true);
     const token = String(query?.token || "");
-    let room = typeof query?.room === "string" ? query.room.trim() : "global";
-    if (!room) room = "global";
+
+    // roomId "must" be provided (global will also have a roomId)
+    const roomId = String(query?.roomId || "").trim();
+    if (!roomId) {
+      socket.write("HTTP/1.1 400 Bad Request\r\n\r\nMissing roomId");
+      return socket.destroy();
+    }
 
     let userId = "";
     try {
@@ -104,6 +110,19 @@ export function attachWebSocket(server: http.Server) {
       userId = d.sub;
     } catch {
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+      return socket.destroy();
+    }
+
+    // Check membership
+    const membership = await prisma.roomMember.findFirst({
+      where: {
+        roomId: roomId,
+        userId: userId,
+      },
+    });
+
+    if (!membership) {
+      socket.write("HTTP/1.1 403 Forbidden\r\n\r\nNot a member of this room");
       return socket.destroy();
     }
 
@@ -118,7 +137,13 @@ export function attachWebSocket(server: http.Server) {
         `Sec-WebSocket-Accept: ${accept}\r\n\r\n`
     );
 
-    const client: Client = { socket, userId, room, alive: true, lastSendTs: 0 };
+    const client: Client = {
+      socket,
+      userId,
+      room: roomId,
+      alive: true,
+      lastSendTs: 0,
+    };
     clients.add(client);
 
     socket.on("data", async (chunk: Buffer) => {
@@ -147,7 +172,7 @@ export function attachWebSocket(server: http.Server) {
 
               const saved = await persistMessage({
                 userId: client.userId,
-                room: client.room,
+                roomId: client.room,
                 content,
                 ts: now,
               });

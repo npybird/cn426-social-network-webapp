@@ -4,24 +4,27 @@ import { prisma } from "../config/db";
 
 export async function listMessages(req: Request, res: Response) {
   try {
-    // 1) sanitize room
-    const roomRaw =
-      typeof req.query.room === "string" ? req.query.room.trim() : "";
-    const room = roomRaw.length > 0 ? roomRaw : "global";
+    // roomId REQUIRED
+    const roomId =
+      typeof req.query.roomId === "string" ? req.query.roomId.trim() : "";
 
-    // 2) safe limit parsing
+    if (!roomId) {
+      return res.status(400).json({ error: "missing_roomId" });
+    }
+
+    // safe limit parsing
     const limitRaw = Number(req.query.limit ?? 50);
     const limit = Number.isFinite(limitRaw)
       ? Math.min(Math.max(1, limitRaw), 200)
       : 50;
 
-    // 3) before timestamp (optional)
+    // optional before timestamp
     const before =
-      typeof req.query.before === "string" && req.query.before.trim().length > 0
+      typeof req.query.before === "string" && req.query.before.trim()
         ? new Date(req.query.before)
         : undefined;
 
-    const whereClause: any = { room };
+    const whereClause: any = { roomId };
     if (before) {
       whereClause.createdAt = { lt: before };
     }
